@@ -10,12 +10,12 @@ import mindspore as ms
 from mindspore import Model, Tensor, context, load_checkpoint, load_param_into_net, ops
 
 
-from dataset import dataloader, ms_map
-from utils.tools import ConfigS3DIS as cfg
-from utils.tools import DataProcessing as DP
-from utils.logger import get_logger
-from utils.helper_ply import write_ply
-from model import RandLANet
+from src.data.dataset import dataloader, ms_map
+from src.utils.tools import ConfigS3DIS as cfg
+from src.utils.tools import DataProcessing as DP
+from src.utils.logger import get_logger
+from src.utils.helper_ply import write_ply
+from src.model.model import RandLANet
 
 
 def test(args):

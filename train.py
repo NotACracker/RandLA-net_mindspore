@@ -20,11 +20,10 @@ from mindspore.train.callback import SummaryCollector
 from mindspore.train.loss_scale_manager import DynamicLossScaleManager, FixedLossScaleManager
 
 
-from dataset import dataloader, ms_map
-from utils.tools import ConfigS3DIS as cfg
-from utils.logger import get_logger
-from utils.metrics import accuracy, intersection_over_union
-from model import RandLANet, RandLAWithLoss, TrainingWrapper, get_param_groups
+from src.data.dataset import dataloader, ms_map
+from src.utils.tools import ConfigS3DIS as cfg
+from src.utils.logger import get_logger
+from src.model.model import RandLANet, RandLAWithLoss, TrainingWrapper, get_param_groups
 
 
 def prepare_network(weights, cfg, args):
@@ -36,41 +35,6 @@ def prepare_network(weights, cfg, args):
     network = RandLAWithLoss(network, weights, cfg.num_classes)
 
     return network
-
-
-def evaluate(network, loader, logger):
-    network = network.network
-    network.set_train(False)
-    loader = loader.batch(batch_size = cfg.val_batch_size,
-                          per_batch_map=ms_map,
-                          input_columns=["xyz","colors","labels","q_idx","c_idx"],
-                          output_columns=["features","labels","input_inds","cloud_inds",
-                                        "p0","p1","p2","p3","p4",
-                                        "n0","n1","n2","n3","n4",
-                                        "pl0","pl1","pl2","pl3","pl4",
-                                        "u0","u1","u2","u3","u4"], 
-                          drop_remainder=True)
-    loader = loader.create_dict_iterator()
-    losses = []
-    accuracies = []
-    ious = []
-    logger.info('validating')
-    for i, data in enumerate(loader):
-        features = data['features']
-        labels = data['labels']
-        xyz = [data['p0'],data['p1'],data['p2'],data['p3'],data['p4']]
-        neigh_idx = [data['n0'],data['n1'],data['n2'],data['n3'],data['n4']]
-        sub_idx = [data['pl0'],data['pl1'],data['pl2'],data['pl3'],data['pl4']]
-        interp_idx = [data['u0'],data['u1'],data['u2'],data['u3'],data['u4']]
-
-        if i%50 == 0:
-            logger.info(i, ' / ', cfg.val_batch_size)
-        loss, logits = network(xyz, features, neigh_idx, sub_idx, interp_idx, labels)
-        losses.append(loss.asnumpy())
-        accuracies.append(accuracy(scores, labels))
-        ious.append(intersection_over_union(scores, labels))
-    
-    return np.mean(losses), np.nanmean(np.array(accuracies), axis=0), np.nanmean(np.array(ious), axis=0)
 
 
 def train(args):

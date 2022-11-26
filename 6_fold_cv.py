@@ -1,7 +1,7 @@
 import numpy as np
 import glob, os, sys
 
-from utils.helper_ply import read_ply
+from src.utils.helper_ply import read_ply
 
 if __name__ == '__main__':
     base_dir = './6_fold_result'  # put 6 fold pred here
