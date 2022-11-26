@@ -97,8 +97,9 @@ RandLA
 │       ├── metrics.py                       # calculate iou and accuracy
 │       └── tools.py                         # DataProcessing and Config
 │
-├── eval.py
+├── 6_fold_cv.py
 ├── README.md
+├── eval.py
 ├── requirements.txt
 ├── train.py
 ```
