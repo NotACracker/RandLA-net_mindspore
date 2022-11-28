@@ -1,19 +1,21 @@
+# This file was copied from project [QingyongHu][RandLA-Net]
+
+import os
 from os.path import join
-import numpy as np
-import colorsys, random, os, sys
-import pandas as pd
+import sys
 from pathlib import Path
+import numpy as np
+import third_party.nearest_neighbors.lib.python.nearest_neighbors as nearest_neighbors
+import third_party.cpp_wrappers.cpp_subsampling.grid_subsampling as cpp_subsampling
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
 
-import third_party.cpp_wrappers.cpp_subsampling.grid_subsampling as cpp_subsampling
-import third_party.nearest_neighbors.lib.python.nearest_neighbors as nearest_neighbors
 
 class ConfigS3DIS:
-    dataset = Path('/dataset/S3DIS/input_0.040') #dataset path
+    dataset = Path('/dataset/S3DIS/input_0.040')  # dataset path
 
     num_points = 40960  # Number of input points
     num_classes = 13  # Number of valid classes
@@ -21,14 +23,15 @@ class ConfigS3DIS:
     num_layers = 5  # Number of layers
     k_n = 16  # KNN
 
-    batch_size = 6 # batch_size during training
-    val_batch_size = 32 # batch_size during validation and test
+    batch_size = 6  # batch_size during training
+    val_batch_size = 32  # batch_size during validation and test
     train_steps = 500  # Number of steps per epochs
     val_steps = 100  # Number of validation steps per epoch
-    ckpt_interval = 100 # interval steps to save ckpt
-    max_ckpt_num = 5 # max ckpt num to save
-    val_area = 'Area_5' # validation area
-    sub_sampling_ratio = [4, 4, 4, 4, 2]  # sampling ratio of random sampling at each layer
+    ckpt_interval = 100  # interval steps to save ckpt
+    max_ckpt_num = 5  # max ckpt num to save
+    val_area = 'Area_5'  # validation area
+    # sampling ratio of random sampling at each layer
+    sub_sampling_ratio = [4, 4, 4, 4, 2]
     d_out = [16, 64, 128, 256, 512]  # feature dimension
 
     max_epoch = 100  # maximum epoch during training
@@ -37,7 +40,8 @@ class ConfigS3DIS:
 
     sampling_type = 'active_learning'
     class_weights = np.array([3370714, 2856755, 4919229, 318158, 375640, 478001, 974733,
-                                      650464, 791496, 88727, 1284130, 229758, 2272837], dtype=np.int32)
+                              650464, 791496, 88727, 1284130, 229758, 2272837], dtype=np.int32)
+
 
 class DataProcessing:
     @staticmethod
@@ -51,13 +55,17 @@ class DataProcessing:
             seq_path = join(dataset_path, seq_id)
             pc_path = join(seq_path, 'velodyne')
             if seq_id == '08':
-                val_file_list.append([join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
+                val_file_list.append([join(pc_path, f)
+                                      for f in np.sort(os.listdir(pc_path))])
                 if seq_id == test_scan_num:
-                    test_file_list.append([join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
+                    test_file_list.append([join(pc_path, f)
+                                           for f in np.sort(os.listdir(pc_path))])
             elif int(seq_id) >= 11 and seq_id == test_scan_num:
-                test_file_list.append([join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
+                test_file_list.append([join(pc_path, f)
+                                       for f in np.sort(os.listdir(pc_path))])
             elif seq_id in ['00', '01', '02', '03', '04', '05', '06', '07', '09', '10']:
-                train_file_list.append([join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
+                train_file_list.append([join(pc_path, f)
+                                        for f in np.sort(os.listdir(pc_path))])
 
         train_file_list = np.concatenate(train_file_list, axis=0)
         val_file_list = np.concatenate(val_file_list, axis=0)
@@ -73,7 +81,8 @@ class DataProcessing:
         :return: neighbor_idx: neighboring points indexes, B*N2*k
         """
 
-        neighbor_idx = nearest_neighbors.knn_batch(support_pts, query_pts, k, omp=True)
+        neighbor_idx = nearest_neighbors.knn_batch(
+            support_pts, query_pts, k, omp=True)
         return neighbor_idx.astype(np.int32)
 
     @staticmethod
@@ -117,20 +126,20 @@ class DataProcessing:
 
         if (features is None) and (labels is None):
             return cpp_subsampling.compute(points, sampleDl=grid_size, verbose=verbose)
-        elif labels is None:
+        if labels is None:
             return cpp_subsampling.compute(points, features=features, sampleDl=grid_size, verbose=verbose)
-        elif features is None:
+        if features is None:
             return cpp_subsampling.compute(points, classes=labels, sampleDl=grid_size, verbose=verbose)
-        else:
-            return cpp_subsampling.compute(points, features=features, classes=labels, sampleDl=grid_size,
-                                           verbose=verbose)
+
+        return cpp_subsampling.compute(points, features=features, classes=labels, sampleDl=grid_size,
+                                       verbose=verbose)
 
     @staticmethod
     def IoU_from_confusions(confusions):
         """
         Computes IoU from confusion matrices.
-        :param confusions: ([..., n_c, n_c] np.int32). Can be any dimension, the confusion matrices should be described by
-        the last axes. n_c = number of classes
+        :param confusions: ([..., n_c, n_c] np.int32). Can be any dimension, the confusion matrices
+        should be described by the last axes. n_c = number of classes
         :return: ([..., n_c] np.float32) IoU score
         """
 

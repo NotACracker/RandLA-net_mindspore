@@ -1,3 +1,27 @@
+# -*-coding:utf-8-*-
+# MIT License
+#
+# Copyright (c) 2019 HuguesTHOMAS
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# This file was copied from project [HuguesTHOMAS][KPConv]
 #
 #
 #      0===============================0
@@ -19,13 +43,11 @@
 #
 #          Imports and global variables
 #      \**********************************/
-#
 
 
 # Basic libs
-import numpy as np
 import sys
-
+import numpy as np
 
 # Define PLY types
 ply_dtypes = dict([
@@ -87,7 +109,6 @@ def parse_mesh_header(plyfile, ext):
     num_faces = None
     current_element = None
 
-
     while b'end_header' not in line and line != b'':
         line = plyfile.readline()
 
@@ -105,7 +126,8 @@ def parse_mesh_header(plyfile, ext):
         elif b'property' in line:
             if current_element == 'vertex':
                 line = line.split()
-                vertex_properties.append((line[2].decode(), ext + ply_dtypes[line[1]]))
+                vertex_properties.append(
+                    (line[2].decode(), ext + ply_dtypes[line[1]]))
             elif current_element == 'vertex':
                 if not line.startswith('property list uchar int'):
                     raise ValueError('Unsupported faces property : ' + line)
@@ -140,7 +162,7 @@ def read_ply(filename, triangular_mesh=False):
     >>> data = read_ply('example.ply')
     >>> values = data['values']
     array([0, 0, 1, 1, 0])
-    
+
     >>> points = np.vstack((data['x'], data['y'], data['z'])).T
     array([[ 0.466  0.595  0.324]
            [ 0.538  0.407  0.654]
@@ -152,10 +174,9 @@ def read_ply(filename, triangular_mesh=False):
 
     with open(filename, 'rb') as plyfile:
 
-
         # Check if the file start with ply
         if b'ply' not in plyfile.readline():
-            raise ValueError('The file does not start whith the word ply')
+            raise ValueError('The file does not start with the word ply')
 
         # get binary_little/big or ascii
         fmt = plyfile.readline().split()[1].decode()
@@ -172,17 +193,20 @@ def read_ply(filename, triangular_mesh=False):
             num_points, num_faces, properties = parse_mesh_header(plyfile, ext)
 
             # Get point data
-            vertex_data = np.fromfile(plyfile, dtype=properties, count=num_points)
+            vertex_data = np.fromfile(
+                plyfile, dtype=properties, count=num_points)
 
             # Get face data
             face_properties = [('k', ext + 'u1'),
                                ('v1', ext + 'i4'),
                                ('v2', ext + 'i4'),
                                ('v3', ext + 'i4')]
-            faces_data = np.fromfile(plyfile, dtype=face_properties, count=num_faces)
+            faces_data = np.fromfile(
+                plyfile, dtype=face_properties, count=num_faces)
 
             # Return vertex data and concatenated faces
-            faces = np.vstack((faces_data['v1'], faces_data['v2'], faces_data['v3'])).T
+            faces = np.vstack(
+                (faces_data['v1'], faces_data['v2'], faces_data['v3'])).T
             data = [vertex_data, faces]
 
         else:
@@ -221,16 +245,16 @@ def write_ply(filename, field_list, field_names, triangular_faces=None):
     Parameters
     ----------
     filename : string
-        the name of the file to which the data is saved. A '.ply' extension will be appended to the 
+        the name of the file to which the data is saved. A '.ply' extension will be appended to the
         file name if it does no already have one.
 
     field_list : list, tuple, numpy array
-        the fields to be saved in the ply file. Either a numpy array, a list of numpy arrays or a 
-        tuple of numpy arrays. Each 1D numpy array and each column of 2D numpy arrays are considered 
-        as one field. 
+        the fields to be saved in the ply file. Either a numpy array, a list of numpy arrays or a
+        tuple of numpy arrays. Each 1D numpy array and each column of 2D numpy arrays are considered
+        as one field.
 
     field_names : list
-        the name of each fields as a list of strings. Has to be the same length as the number of 
+        the name of each fields as a list of strings. Has to be the same length as the number of
         fields.
 
     Examples
@@ -248,23 +272,24 @@ def write_ply(filename, field_list, field_names, triangular_faces=None):
     """
 
     # Format list input to the right form
-    field_list = list(field_list) if (type(field_list) == list or type(field_list) == tuple) else list((field_list,))
+    field_list = list(field_list) if (isinstance(field_list) == list or isinstance(
+        field_list) == tuple) else list((field_list,))
     for i, field in enumerate(field_list):
         if field.ndim < 2:
             field_list[i] = field.reshape(-1, 1)
         if field.ndim > 2:
             print('fields have more than 2 dimensions')
-            return False    
+            return False
 
     # check all fields have the same number of data
     n_points = [field.shape[0] for field in field_list]
     if not np.all(np.equal(n_points, n_points[0])):
         print('wrong field dimensions')
-        return False    
+        return False
 
     # Check if field_names and field_list have same nb of column
     n_fields = np.sum([field.shape[1] for field in field_list])
-    if (n_fields != len(field_names)):
+    if n_fields != len(field_names):
         print('wrong number of field names')
         return False
 
@@ -286,7 +311,8 @@ def write_ply(filename, field_list, field_names, triangular_faces=None):
 
         # Add faces if needded
         if triangular_faces is not None:
-            header.append('element face {:d}'.format(triangular_faces.shape[0]))
+            header.append('element face {:d}'.format(
+                triangular_faces.shape[0]))
             header.append('property list uchar int vertex_indices')
 
         # End of header
@@ -317,9 +343,11 @@ def write_ply(filename, field_list, field_names, triangular_faces=None):
 
         if triangular_faces is not None:
             triangular_faces = triangular_faces.astype(np.int32)
-            type_list = [('k', 'uint8')] + [(str(ind), 'int32') for ind in range(3)]
+            type_list = [('k', 'uint8')] + [(str(ind), 'int32')
+                                            for ind in range(3)]
             data = np.empty(triangular_faces.shape[0], dtype=type_list)
-            data['k'] = np.full((triangular_faces.shape[0],), 3, dtype=np.uint8)
+            data['k'] = np.full(
+                (triangular_faces.shape[0],), 3, dtype=np.uint8)
             data['0'] = triangular_faces[:, 0]
             data['1'] = triangular_faces[:, 1]
             data['2'] = triangular_faces[:, 2]
@@ -353,4 +381,3 @@ def describe_element(name, df):
             element.append('property ' + f + ' ' + df.columns.values[i])
 
     return element
-

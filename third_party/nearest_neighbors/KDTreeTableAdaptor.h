@@ -25,7 +25,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************/
-
+/* This file was copied from project [jlblancoc][nanoflann] */
 #pragma once
 
 #include "nanoflann.hpp"
@@ -49,69 +49,69 @@
 // template <class VectorType, typename num_t = float, int DIM = -1, class Distance = nanoflann::metric_L2, typename IndexType = size_t>
 // struct KDTreeVectorAdaptor
 // {
-// 	typedef KDTreeVectorAdaptor<VectorType,num_t,DIM,Distance> self_t;
-// 	typedef typename Distance::template traits<num_t,self_t>::distance_t metric_t;
-// 	typedef nanoflann::KDTreeSingleIndexAdaptor< metric_t,self_t,DIM,IndexType>  index_t;
+//   typedef KDTreeVectorAdaptor<VectorType,num_t,DIM,Distance> self_t;
+//   typedef typename Distance::template traits<num_t,self_t>::distance_t metric_t;
+//   typedef nanoflann::KDTreeSingleIndexAdaptor< metric_t,self_t,DIM,IndexType>  index_t;
 
-// 	index_t* index; //! The kd-tree index for the user to call its methods as usual with any other FLANN index.
-// 	size_t dims;
+//   index_t* index; //! The kd-tree index for the user to call its methods as usual with any other FLANN index.
+//   size_t dims;
 
-// 	/// Constructor: takes a const ref to the vector of vectors object with the data points
-// 	KDTreeVectorAdaptor(const size_t dims /* dimensionality */, const VectorType &mat, const int leaf_max_size = 10) : m_data(mat)
-// 	{
-// 		assert(mat.size() != 0);
-// 		this->dims= dims;
-// 		index = new index_t( static_cast<int>(dims), *this /* adaptor */, nanoflann::KDTreeSingleIndexAdaptorParams(leaf_max_size ) );
-// 		index->buildIndex();
-// 	}
+//   /// Constructor: takes a const ref to the vector of vectors object with the data points
+//   KDTreeVectorAdaptor(const size_t dims /* dimensionality */, const VectorType &mat, const int leaf_max_size = 10) : m_data(mat)
+//   {
+//     assert(mat.size() != 0);
+//     this->dims= dims;
+//     index = new index_t( static_cast<int>(dims), *this /* adaptor */, nanoflann::KDTreeSingleIndexAdaptorParams(leaf_max_size ) );
+//     index->buildIndex();
+//   }
 
-// 	~KDTreeVectorAdaptor() {
-// 		delete index;
-// 	}
+//   ~KDTreeVectorAdaptor() {
+//     delete index;
+//   }
 
-// 	const VectorType &m_data;
+//   const VectorType &m_data;
 
-// 	/** Query for the \a num_closest closest points to a given point (entered as query_point[0:dim-1]).
-// 	  *  Note that this is a short-cut method for index->findNeighbors().
-// 	  *  The user can also call index->... methods as desired.
-// 	  * \note nChecks_IGNORED is ignored but kept for compatibility with the original FLANN interface.
-// 	  */
-// 	inline void query(const num_t *query_point, const size_t num_closest, IndexType *out_indices, num_t *out_distances_sq, const int nChecks_IGNORED = 10) const
-// 	{
-// 		nanoflann::KNNResultSet<num_t,IndexType> resultSet(num_closest);
-// 		resultSet.init(out_indices, out_distances_sq);
-// 		index->findNeighbors(resultSet, query_point, nanoflann::SearchParams());
-// 	}
+//   /** Query for the \a num_closest closest points to a given point (entered as query_point[0:dim-1]).
+//     *  Note that this is a short-cut method for index->findNeighbors().
+//     *  The user can also call index->... methods as desired.
+//     * \note nChecks_IGNORED is ignored but kept for compatibility with the original FLANN interface.
+//     */
+//   inline void query(const num_t *query_point, const size_t num_closest, IndexType *out_indices, num_t *out_distances_sq, const int nChecks_IGNORED = 10) const
+//   {
+//     nanoflann::KNNResultSet<num_t,IndexType> resultSet(num_closest);
+//     resultSet.init(out_indices, out_distances_sq);
+//     index->findNeighbors(resultSet, query_point, nanoflann::SearchParams());
+//   }
 
-// 	/** @name Interface expected by KDTreeSingleIndexAdaptor
-// 	  * @{ */
+//   /** @name Interface expected by KDTreeSingleIndexAdaptor
+//     * @{ */
 
-// 	const self_t & derived() const {
-// 		return *this;
-// 	}
-// 	self_t & derived()       {
-// 		return *this;
-// 	}
+//   const self_t & derived() const {
+//     return *this;
+//   }
+//   self_t & derived()       {
+//     return *this;
+//   }
 
-// 	// Must return the number of data points
-// 	inline size_t kdtree_get_point_count() const {
-// 		return m_data.size()/this->dims;
-// 	}
+//   // Must return the number of data points
+//   inline size_t kdtree_get_point_count() const {
+//     return m_data.size()/this->dims;
+//   }
 
-// 	// Returns the dim'th component of the idx'th point in the class:
-// 	inline num_t kdtree_get_pt(const size_t idx, const size_t dim) const {
-// 		return m_data[idx*this->dims + dim];
-// 	}
+//   // Returns the dim'th component of the idx'th point in the class:
+//   inline num_t kdtree_get_pt(const size_t idx, const size_t dim) const {
+//     return m_data[idx*this->dims + dim];
+//   }
 
-// 	// Optional bounding-box computation: return false to default to a standard bbox computation loop.
-// 	//   Return true if the BBOX was already computed by the class and returned in "bb" so it can be avoided to redo it again.
-// 	//   Look at bb.size() to find out the expected dimensionality (e.g. 2 or 3 for point clouds)
-// 	template <class BBOX>
-// 	bool kdtree_get_bbox(BBOX & /*bb*/) const {
-// 		return false;
-// 	}
+//   // Optional bounding-box computation: return false to default to a standard bbox computation loop.
+//   //   Return true if the BBOX was already computed by the class and returned in "bb" so it can be avoided to redo it again.
+//   //   Look at bb.size() to find out the expected dimensionality (e.g. 2 or 3 for point clouds)
+//   template <class BBOX>
+//   bool kdtree_get_bbox(BBOX & /*bb*/) const {
+//     return false;
+//   }
 
-// 	/** @} */
+//   /** @} */
 
 // }; // end of KDTreeVectorOfVectorsAdaptor
 
@@ -121,69 +121,69 @@
 template <class TableType, typename num_t = float, int DIM = -1, class Distance = nanoflann::metric_L2, typename IndexType = size_t>
 struct KDTreeTableAdaptor
 {
-	typedef KDTreeTableAdaptor<TableType,num_t,DIM,Distance> self_t;
-	typedef typename Distance::template traits<num_t,self_t>::distance_t metric_t;
-	typedef nanoflann::KDTreeSingleIndexAdaptor< metric_t,self_t,DIM,IndexType>  index_t;
+    typedef KDTreeTableAdaptor<TableType,num_t,DIM,Distance> self_t;
+    typedef typename Distance::template traits<num_t,self_t>::distance_t metric_t;
+    typedef nanoflann::KDTreeSingleIndexAdaptor< metric_t,self_t,DIM,IndexType>  index_t;
 
-	index_t* index; //! The kd-tree index for the user to call its methods as usual with any other FLANN index.
-	size_t dim;
-	size_t npts;
-	const TableType* m_data;
+    index_t* index; //! The kd-tree index for the user to call its methods as usual with any other FLANN index.
+    size_t dim;
+    size_t npts;
+    const TableType* m_data;
 
-	/// Constructor: takes a const ref to the vector of vectors object with the data points
-	KDTreeTableAdaptor(const size_t npts, const size_t dim, const TableType* mat, const int leaf_max_size = 10) : m_data(mat), dim(dim), npts(npts)
-	{
-		assert(npts != 0);
-		index = new index_t( static_cast<int>(dim), *this /* adaptor */, nanoflann::KDTreeSingleIndexAdaptorParams(leaf_max_size ) );
-		index->buildIndex();
-	}
+    /// Constructor: takes a const ref to the vector of vectors object with the data points
+    KDTreeTableAdaptor(const size_t npts, const size_t dim, const TableType* mat, const int leaf_max_size = 10) : m_data(mat), dim(dim), npts(npts)
+    {
+        assert(npts != 0);
+        index = new index_t( static_cast<int>(dim), *this /* adaptor */, nanoflann::KDTreeSingleIndexAdaptorParams(leaf_max_size ) );
+        index->buildIndex();
+    }
 
-	~KDTreeTableAdaptor() {
-		delete index;
-	}
+    ~KDTreeTableAdaptor() {
+        delete index;
+    }
 
 
-	/** Query for the \a num_closest closest points to a given point (entered as query_point[0:dim-1]).
-	  *  Note that this is a short-cut method for index->findNeighbors().
-	  *  The user can also call index->... methods as desired.
-	  * \note nChecks_IGNORED is ignored but kept for compatibility with the original FLANN interface.
-	  */
-	inline void query(const num_t *query_point, const size_t num_closest, IndexType *out_indices, num_t *out_distances_sq, const int nChecks_IGNORED = 10) const
-	{
-		nanoflann::KNNResultSet<num_t,IndexType> resultSet(num_closest);
-		resultSet.init(out_indices, out_distances_sq);
-		index->findNeighbors(resultSet, query_point, nanoflann::SearchParams());
-	}
+    /** Query for the \a num_closest closest points to a given point (entered as query_point[0:dim-1]).
+      *  Note that this is a short-cut method for index->findNeighbors().
+      *  The user can also call index->... methods as desired.
+      * \note nChecks_IGNORED is ignored but kept for compatibility with the original FLANN interface.
+      */
+    inline void query(const num_t *query_point, const size_t num_closest, IndexType *out_indices, num_t *out_distances_sq, const int nChecks_IGNORED = 10) const
+    {
+        nanoflann::KNNResultSet<num_t,IndexType> resultSet(num_closest);
+        resultSet.init(out_indices, out_distances_sq);
+        index->findNeighbors(resultSet, query_point, nanoflann::SearchParams());
+    }
 
-	/** @name Interface expected by KDTreeSingleIndexAdaptor
-	  * @{ */
+    /** @name Interface expected by KDTreeSingleIndexAdaptor
+      * @{ */
 
-	const self_t & derived() const {
-		return *this;
-	}
-	self_t & derived()       {
-		return *this;
-	}
+    const self_t & derived() const {
+        return *this;
+    }
+    self_t & derived()       {
+        return *this;
+    }
 
-	// Must return the number of data points
-	inline size_t kdtree_get_point_count() const {
-		return this->npts;
-	}
+    // Must return the number of data points
+    inline size_t kdtree_get_point_count() const {
+        return this->npts;
+    }
 
-	// Returns the dim'th component of the idx'th point in the class:
-	inline num_t kdtree_get_pt(const size_t pts_id, const size_t coord_id) const {
-		return m_data[pts_id*this->dim + coord_id];
-	}
+    // Returns the dim'th component of the idx'th point in the class:
+    inline num_t kdtree_get_pt(const size_t pts_id, const size_t coord_id) const {
+        return m_data[pts_id*this->dim + coord_id];
+    }
 
-	// Optional bounding-box computation: return false to default to a standard bbox computation loop.
-	//   Return true if the BBOX was already computed by the class and returned in "bb" so it can be avoided to redo it again.
-	//   Look at bb.size() to find out the expected dimensionality (e.g. 2 or 3 for point clouds)
-	template <class BBOX>
-	bool kdtree_get_bbox(BBOX & /*bb*/) const {
-		return false;
-	}
+    // Optional bounding-box computation: return false to default to a standard bbox computation loop.
+    //   Return true if the BBOX was already computed by the class and returned in "bb" so it can be avoided to redo it again.
+    //   Look at bb.size() to find out the expected dimensionality (e.g. 2 or 3 for point clouds)
+    template <class BBOX>
+    bool kdtree_get_bbox(BBOX & /*bb*/) const {
+        return false;
+    }
 
-	/** @} */
+    /** @} */
 
 }; // end of KDTreeVectorOfVectorsAdaptor
 

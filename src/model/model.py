@@ -1,34 +1,37 @@
-import time
+# -*-coding:utf-8-*-
+# Copyright 2022 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
 
-import numpy as np
-import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as P
-from mindspore.ops import composite as C
-from mindspore.ops import functional as F
-from mindspore.ops import operations as op
-from mindspore import Tensor, context
 from mindspore.common.initializer import TruncatedNormal
-
-from pathlib import Path
-from dataset import ms_map, dataloader
-from utils.tools import DataProcessing as DP
-from utils.tools import ConfigS3DIS as cfg
 
 
 
 class SharedMLP(nn.Cell):
     def __init__(
-        self,
-        in_channels,
-        out_channels,
-        kernel_size=1,
-        stride=1,
-        transpose=False,
-        pad_mode='same',
-        bn=False,
-        activation_fn=None,
-        bias = True
+            self,
+            in_channels,
+            out_channels,
+            kernel_size=1,
+            stride=1,
+            transpose=False,
+            pad_mode='valid',
+            bn=False,
+            activation_fn=None,
+            bias=True
     ):
         super(SharedMLP, self).__init__()
 
@@ -39,27 +42,28 @@ class SharedMLP(nn.Cell):
             out_channels,
             kernel_size,
             stride=stride,
-            pad_mode='valid',
+            pad_mode=pad_mode,
             has_bias=bias,
             weight_init=TruncatedNormal(sigma=1e-3)
         )
-        self.batch_norm = nn.BatchNorm2d(out_channels, eps=1e-6, momentum=0.99) if bn else None
+        self.has_bn = bn
+        self.batch_norm = nn.BatchNorm2d(out_channels, eps=1e-6, momentum=0.99)
         self.activation_fn = activation_fn
 
-    def construct(self, input):
+    def construct(self, x):
         r"""
             construct method
 
             Parameters
             ----------
-            input: ms.Tensor, shape (B, d_in, N, K)
+            x: ms.Tensor, shape (B, d_in, N, K)
 
             Returns
             -------
             ms.Tensor, shape (B, d_out, N, K)
         """
-        x = self.conv(input)
-        if self.batch_norm:
+        x = self.conv(x)
+        if self.has_bn:
             x = self.batch_norm(x)
         if self.activation_fn:
             x = self.activation_fn(x)
@@ -67,7 +71,7 @@ class SharedMLP(nn.Cell):
 
 
 class LocalSpatialEncoding(nn.Cell):
-    def __init__(self, in_channel=10, out_channel=1, use_pos_encoding=True, bias = True):
+    def __init__(self, in_channel=10, out_channel=1, use_pos_encoding=True, bias=True):
         super(LocalSpatialEncoding, self).__init__()
 
         self.mlp = SharedMLP(in_channel, out_channel, bn=True, activation_fn=nn.LeakyReLU(0.2), bias=bias)
@@ -99,11 +103,11 @@ class LocalSpatialEncoding(nn.Cell):
             # idx(B, N, K), coords(B, N, 3)
             # neighbors[b, i, n, k] = coords[b, idx[b, n, k], i] = extended_coords[b, i, extended_idx[b, i, n, k], k]
             extended_idx = P.Tile()(idx.expand_dims(1), (1, 3, 1, 1))
-            extended_coords = P.Tile()(coords.transpose(0, 2, 1).expand_dims(-1), (1, 1, 1, idx.shape[-1]))
+            extended_coords = P.Tile()(coords.transpose(0, 2, 1).expand_dims(-1),
+                                       (1, 1, 1, idx.shape[-1]))
             neighbors = P.GatherD()(extended_coords, 2, extended_idx)  # shape (B, 3, N, K)
             relative_coords = extended_coords - neighbors
-            relative_dist = P.Sqrt()(P.Square()(relative_coords))
-            relative_dist = P.ReduceSum(keep_dims=True)(relative_dist, -3)  # shape (B, 1, N, K)
+            relative_dist = P.Sqrt()(P.ReduceSum(keep_dims=True)(P.Square()(relative_coords), -3))  # shape (B, 1, N, K)
             f_xyz = cat((
                 relative_dist,
                 relative_coords,
@@ -115,17 +119,18 @@ class LocalSpatialEncoding(nn.Cell):
 
         f_xyz = self.mlp(f_xyz)  # (B,8,N,K)
 
-        f_tile = P.Tile()(features, (1, 1, 1, idx.shape[-1]))  # (B, 8, N, 1) -> (B,8,N,K)
+        # (B, 8, N, 1) -> (B,8,N,K)
+        f_tile = P.Tile()(features, (1, 1, 1, idx.shape[-1]))
         extended_idx_for_feat = P.Tile()(idx.expand_dims(1), (1, f_xyz.shape[1], 1, 1))
         f_neighbours = P.GatherD()(f_tile, 2, extended_idx_for_feat)  # (B,8,N,K) -> (B,8,N,K)
 
-        f_concat = cat([f_xyz, f_neighbours])  # (B,8,N,K) & (B,8,N,K) -> (B,16,N,K)
+        # (B,8,N,K) & (B,8,N,K) -> (B,16,N,K)
+        f_concat = cat([f_xyz, f_neighbours])
 
         if self.use_pos_encoding:
             return f_xyz, f_concat
-        else:
-            return f_concat
 
+        return f_concat
 
 
 class AttentivePooling(nn.Cell):
@@ -136,7 +141,8 @@ class AttentivePooling(nn.Cell):
             nn.Dense(in_channels, in_channels, has_bias=False),
             nn.Softmax(-2)
         ])
-        self.mlp = SharedMLP(in_channels, out_channels, bn=True, activation_fn=nn.LeakyReLU(0.2), bias=bias)
+        self.mlp = SharedMLP(in_channels, out_channels, bn=True,
+                             activation_fn=nn.LeakyReLU(0.2), bias=bias)
 
     def construct(self, x):
         r"""
@@ -151,20 +157,18 @@ class AttentivePooling(nn.Cell):
             ms.Tensor, shape (B, d_out, N, 1)
         """
         # computing attention scores
-        scores = self.score_fn(x.transpose(0,2,3,1)).transpose(0,3,1,2)
+        scores = self.score_fn(x.transpose(0, 2, 3, 1)).transpose(0, 3, 1, 2)
 
         # sum over the neighbors
         features = scores * x
-        features = P.ReduceSum(keep_dims=True)(features, -1) # shape (B, d_in, N, 1)
+        features = P.ReduceSum(keep_dims=True)(features, -1)  # shape (B, d_in, N, 1)
 
         return self.mlp(features)
-
 
 
 class LocalFeatureAggregation(nn.Cell):
     def __init__(self, d_in, d_out, bias):
         super(LocalFeatureAggregation, self).__init__()
-
 
         self.mlp1 = SharedMLP(d_in, d_out//2, bn=True, activation_fn=nn.LeakyReLU(0.2), bias=bias)
         self.mlp2 = SharedMLP(d_out, 2*d_out, bn=True, bias=bias)
@@ -206,11 +210,10 @@ class LocalFeatureAggregation(nn.Cell):
         return self.lrelu(self.mlp2(f_pc_agg) + self.shortcut(features))
 
 
-
 class RandLANet(nn.Cell):
     def __init__(self, d_in, num_classes, bias):
         super(RandLANet, self).__init__()
-        
+
         self.fc_start = nn.Dense(d_in, 8)
         self.bn_start = nn.SequentialCell([
             nn.BatchNorm2d(8, eps=1e-6, momentum=0.99),
@@ -268,9 +271,9 @@ class RandLANet(nn.Cell):
             ms.Tensor, shape (B, num_classes, N)
                 segmentation scores for each point
         """
-       
-        feature = self.fc_start(feature).swapaxes(-2,-1).expand_dims(-1)
-        feature = self.bn_start(feature) # shape (B, 8, N, 1)
+
+        feature = self.fc_start(feature).swapaxes(-2, -1).expand_dims(-1)
+        feature = self.bn_start(feature)  # shape (B, 8, N, 1)
 
         # <<<<<<<<<< ENCODER
 
@@ -286,13 +289,14 @@ class RandLANet(nn.Cell):
 
         # # >>>>>>>>>> ENCODER
 
-        feature = self.mlp(f_stack[-1]) # [B, d, N, 1]
+        feature = self.mlp(f_stack[-1])  # [B, d, N, 1]
 
         # <<<<<<<<<< DECODER
-        
+
         f_decoder_list = []
         for j in range(5):
-            f_interp_i = self.random_sample(feature, interp_idx[-j-1]) # [B, d, n, 1]
+            f_interp_i = self.random_sample(
+                feature, interp_idx[-j-1])  # [B, d, n, 1]
             cat = P.Concat(1)
             f_decoder_i = self.decoder[j](cat((f_stack[-j-2], f_interp_i)))
             feature = f_decoder_i
@@ -300,10 +304,10 @@ class RandLANet(nn.Cell):
 
         # >>>>>>>>>> DECODER
 
-        scores = self.fc_end(f_decoder_list[-1]) # [B, num_classes, N, 1]
+        scores = self.fc_end(f_decoder_list[-1])  # [B, num_classes, N, 1]
 
         return scores.squeeze(-1)
-    
+
     @staticmethod
     def random_sample(feature, pool_idx):
         """
@@ -315,39 +319,44 @@ class RandLANet(nn.Cell):
         n_ = pool_idx.shape[1]
         # [B, N', max_num] --> [B, d, N', max_num]
         # pool_idx = P.repeat_elements(pool_idx.expand_dims(1), feature.shape[1], 1)
-        pool_idx = P.Tile()(pool_idx.expand_dims(1), (1, feature.shape[1], 1, 1))
+        pool_idx = P.Tile()(pool_idx.expand_dims(1),
+                            (1, feature.shape[1], 1, 1))
         # [B, d, N', max_num] --> [B, d, N'*max_num]
         pool_idx = pool_idx.reshape((b, d, -1))
         pool_features = P.GatherD()(feature.squeeze(-1), -1, pool_idx)
         pool_features = pool_features.reshape((b, d, n_, -1))
-        pool_features = P.ReduceMax(keep_dims=True)(pool_features, -1) # [B, d, N', 1]
+        pool_features = P.ReduceMax(keep_dims=True)(
+            pool_features, -1)  # [B, d, N', 1]
         return pool_features
 
 
 class RandLAWithLoss(nn.Cell):
     """RadnLA-net with loss"""
+
     def __init__(self, network, weights, num_classes):
         super(RandLAWithLoss, self).__init__()
         self.network = network
         self.weights = weights
         self.num_classes = num_classes
-        self.onehot = nn.OneHot(depth = num_classes)
+        self.onehot = nn.OneHot(depth=num_classes)
         self.loss_fn = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
 
-    def construct(self, feature, labels, input_inds, cloud_inds,p0,p1,p2,p3,p4,n0,n1,n2,n3,n4,pl0,pl1,pl2,pl3,pl4,u0,u1,u2,u3,u4):
-        xyz = [p0,p1,p2,p3,p4]
-        neighbor_idx = [n0,n1,n2,n3,n4]
-        sub_idx = [pl0,pl1,pl2,pl3,pl4]
-        interp_idx = [u0,u1,u2,u3,u4]
+    def construct(self, feature, labels, input_inds, cloud_inds,
+                  p0, p1, p2, p3, p4, n0, n1, n2, n3, n4,
+                  pl0, pl1, pl2, pl3, pl4, u0, u1, u2, u3, u4):
+        xyz = [p0, p1, p2, p3, p4]
+        neighbor_idx = [n0, n1, n2, n3, n4]
+        sub_idx = [pl0, pl1, pl2, pl3, pl4]
+        interp_idx = [u0, u1, u2, u3, u4]
         logits = self.network(xyz, feature, neighbor_idx, sub_idx, interp_idx)
-        logit = logits.swapaxes(-2,-1).reshape((-1, self.num_classes)) # [b*n, 13]
-        labels = labels.reshape((-1, )) # [b, n] --> [b*n]
-        one_hot_labels = self.onehot(labels) # [b*n, 13]
-        weights = self.weights * one_hot_labels # [b*n, 13]
-        weights = P.ReduceSum()(weights, 1) # [b*n]
-        unweighted_loss = self.loss_fn(logit, one_hot_labels) # [b*n]
-        weighted_loss = unweighted_loss * weights # [b*n]
-        CE_loss = weighted_loss.mean() # [1]
+        logit = logits.swapaxes(-2, -1).reshape((-1, self.num_classes))  # [b*n, 13]
+        labels = labels.reshape((-1,))  # [b, n] --> [b*n]
+        one_hot_labels = self.onehot(labels)  # [b*n, 13]
+        weights = self.weights * one_hot_labels  # [b*n, 13]
+        weights = P.ReduceSum()(weights, 1)  # [b*n]
+        unweighted_loss = self.loss_fn(logit, one_hot_labels)  # [b*n]
+        weighted_loss = unweighted_loss * weights  # [b*n]
+        CE_loss = weighted_loss.mean()  # [1]
 
         return CE_loss
 
@@ -371,4 +380,3 @@ def get_param_groups(network):
             decay_params.append(x)
 
     return [{'params': no_decay_params, 'weight_decay': 0.0}, {'params': decay_params}]
-

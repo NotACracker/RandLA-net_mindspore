@@ -1,20 +1,34 @@
-import pickle, time, warnings
+# -*-coding:utf-8-*-
+# Copyright 2022 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+
+import pickle
+import time
 import numpy as np
-from pathlib import Path
 
 import mindspore.dataset as ds
-from mindspore import Tensor, context
-from mindspore import dtype as mstype
-import mindspore.ops as ops
 
-from utils.tools import ConfigS3DIS as cfg
-from utils.tools import DataProcessing as DP
-from utils.helper_ply import read_ply
+from src.utils.tools import ConfigS3DIS as cfg
+from src.utils.tools import DataProcessing as DP
+from src.utils.helper_ply import read_ply
+
 
 class S3DISDatasetGenerator:
-    def __init__(self, dir, data_type='ply', val_area = 'Area_5'):
-        self.path = dir
-        self.paths = list(dir.glob(f'*.{data_type}'))
+    def __init__(self, dataset_dir, data_type='ply', val_area='Area_5'):
+        self.path = dataset_dir
+        self.paths = list(dataset_dir.glob(f'*.{data_type}'))
         self.size = len(self.paths)
         self.data_type = data_type
         self.label_to_names = {0: 'ceiling',
@@ -31,7 +45,8 @@ class S3DISDatasetGenerator:
                                11: 'board',
                                12: 'clutter'}
         self.num_classes = len(self.label_to_names)
-        self.label_values = np.sort([k for k, v in self.label_to_names.items()])
+        self.label_values = np.sort(
+            [k for k, v in self.label_to_names.items()])
         self.label_to_idx = {l: i for i, l in enumerate(self.label_values)}
         self.ignored_labels = np.array([])
         self.input_trees = {'training': [], 'validation': []}
@@ -47,7 +62,7 @@ class S3DISDatasetGenerator:
         print('Size of validation : ', len(self.input_colors['validation']))
 
     def load_data(self):
-        for i, file_path in enumerate(self.paths):
+        for _, file_path in enumerate(self.paths):
             t0 = time.time()
             cloud_name = file_path.stem
             if self.val_area in cloud_name:
@@ -60,7 +75,8 @@ class S3DISDatasetGenerator:
             sub_ply_file = self.path / '{:s}.ply'.format(cloud_name)
 
             data = read_ply(sub_ply_file)
-            sub_colors = np.vstack((data['red'], data['green'], data['blue'])).T
+            sub_colors = np.vstack(
+                (data['red'], data['green'], data['blue'])).T
             sub_labels = data['class']
 
             # Read pkl with search tree
@@ -74,13 +90,14 @@ class S3DISDatasetGenerator:
             self.input_names[cloud_split].append(cloud_name)
 
             size = sub_colors.shape[0] * 4 * 7
-            print('{:s} {:.1f} MB loaded in {:.1f}s'.format(kd_tree_file.name, size * 1e-6, time.time() - t0))
+            print('{:s} {:.1f} MB loaded in {:.1f}s'.format(
+                kd_tree_file.name, size * 1e-6, time.time() - t0))
 
         print('\nPreparing reprojected indices for testing')
 
         # Get validation and test reprojected indices
 
-        for i, file_path in enumerate(self.paths):
+        for _, file_path in enumerate(self.paths):
             t0 = time.time()
             cloud_name = file_path.stem
 
@@ -92,7 +109,8 @@ class S3DISDatasetGenerator:
 
                 self.val_proj += [proj_idx]
                 self.val_labels += [labels]
-                print('{:s} done in {:.1f}s'.format(cloud_name, time.time() - t0))
+                print('{:s} done in {:.1f}s'.format(
+                    cloud_name, time.time() - t0))
 
     def __getitem__(self, idx):
         pass
@@ -116,25 +134,28 @@ class ActiveLearningSampler(ds.Sampler):
         else:
             self.n_samples = cfg.val_steps
 
-        #Random initialisation for weights
+        # Random initialisation for weights
         self.possibility[split] = []
         self.min_possibility[split] = []
-        for i, tree in enumerate(self.dataset.input_colors[split]):
-            self.possibility[split] += [np.random.rand(tree.data.shape[0]) * 1e-3]
-            self.min_possibility[split] += [float(np.min(self.possibility[split][-1]))]
+        for _, tree in enumerate(self.dataset.input_colors[split]):
+            self.possibility[split] += [
+                np.random.rand(tree.data.shape[0]) * 1e-3]
+            self.min_possibility[split] += [
+                float(np.min(self.possibility[split][-1]))]
 
     def __iter__(self):
         return self.spatially_regular_gen()
 
     def __len__(self):
-        return self.n_samples * self.batch_size # not equal to the actual size of the dataset, but enable nice progress bars
+        # not equal to the actual size of the dataset, but enable nice progress bars
+        return self.n_samples * self.batch_size
 
     def spatially_regular_gen(self):
         # Choosing the least known point as center of a new cloud each time.
 
-        for i in range(self.n_samples * self.batch_size):  # num_per_epoch
+        for _ in range(self.n_samples * self.batch_size):  # num_per_epoch
             # t0 = time.time()
-            
+
             # Generator loop
             # Choose a random cloud
             cloud_idx = int(np.argmin(self.min_possibility[self.split]))
@@ -143,7 +164,8 @@ class ActiveLearningSampler(ds.Sampler):
             point_ind = np.argmin(self.possibility[self.split][cloud_idx])
 
             # Get points from tree structure
-            points = np.array(self.dataset.input_trees[self.split][cloud_idx].data, copy=False)
+            points = np.array(
+                self.dataset.input_trees[self.split][cloud_idx].data, copy=False)
 
             # Center point of input region
             center_point = points[point_ind, :].reshape(1, -1)
@@ -153,9 +175,11 @@ class ActiveLearningSampler(ds.Sampler):
             pick_point = center_point + noise.astype(center_point.dtype)
 
             if len(points) < cfg.num_points:
-                queried_idx = self.dataset.input_trees[self.split][cloud_idx].query(pick_point, k=len(points))[1][0]
+                queried_idx = self.dataset.input_trees[self.split][cloud_idx].query(
+                    pick_point, k=len(points))[1][0]
             else:
-                queried_idx = self.dataset.input_trees[self.split][cloud_idx].query(pick_point, k=cfg.num_points)[1][0]
+                queried_idx = self.dataset.input_trees[self.split][cloud_idx].query(
+                    pick_point, k=cfg.num_points)[1][0]
 
             queried_idx = DP.shuffle_idx(queried_idx)
             # Collect points and colors
@@ -164,15 +188,18 @@ class ActiveLearningSampler(ds.Sampler):
             queried_pc_colors = self.dataset.input_colors[self.split][cloud_idx][queried_idx]
             queried_pc_labels = self.dataset.input_labels[self.split][cloud_idx][queried_idx]
 
-            dists = np.sum(np.square((points[queried_idx] - pick_point).astype(np.float32)), axis=1)
+            dists = np.sum(
+                np.square((points[queried_idx] - pick_point).astype(np.float32)), axis=1)
             delta = np.square(1 - dists / np.max(dists))
             self.possibility[self.split][cloud_idx][queried_idx] += delta
-            self.min_possibility[self.split][cloud_idx] = float(np.min(self.possibility[self.split][cloud_idx]))
+            self.min_possibility[self.split][cloud_idx] = float(
+                np.min(self.possibility[self.split][cloud_idx]))
 
             if len(points) < cfg.num_points:
                 queried_pc_xyz, queried_pc_colors, queried_idx, queried_pc_labels = \
-                    DP.data_aug(queried_pc_xyz, queried_pc_colors, queried_pc_labels, queried_idx, cfg.num_points)
-            
+                    DP.data_aug(queried_pc_xyz, queried_pc_colors,
+                                queried_pc_labels, queried_idx, cfg.num_points)
+
             queried_pc_xyz = queried_pc_xyz.astype(np.float32)
             queried_pc_colors = queried_pc_colors.astype(np.float32)
             queried_pc_labels = queried_pc_labels.astype(np.int32)
@@ -180,7 +207,6 @@ class ActiveLearningSampler(ds.Sampler):
             cloud_idx = np.array([cloud_idx], dtype=np.int32)
 
             yield queried_pc_xyz, queried_pc_colors, queried_pc_labels, queried_idx, cloud_idx
-
 
 
 def ms_map(batch_xyz, batch_features, batch_labels, batch_pc_idx, batch_cloud_idx, batchInfo):
@@ -194,15 +220,18 @@ def ms_map(batch_xyz, batch_features, batch_labels, batch_pc_idx, batch_cloud_id
     batch_xyz = np.array(batch_xyz)
     batch_features = np.array(batch_features)
     batch_features = np.concatenate((batch_xyz, batch_features), axis=-1)
-    input_points = [] # [num_layers, B, N, 3]
-    input_neighbors = [] # [num_layers, B, N, 16]
-    input_pools = [] # [num_layers, B, N, 16]
-    input_up_samples = [] # [num_layers, B, N, 1]
+    input_points = []  # [num_layers, B, N, 3]
+    input_neighbors = []  # [num_layers, B, N, 16]
+    input_pools = []  # [num_layers, B, N, 16]
+    input_up_samples = []  # [num_layers, B, N, 1]
 
     for i in range(cfg.num_layers):
-        neighbour_idx = DP.knn_search(batch_xyz, batch_xyz, cfg.k_n).astype(np.int32)
-        sub_points = batch_xyz[:, :batch_xyz.shape[1] // cfg.sub_sampling_ratio[i], :]
-        pool_i = neighbour_idx[:, :batch_xyz.shape[1] // cfg.sub_sampling_ratio[i], :]
+        neighbour_idx = DP.knn_search(
+            batch_xyz, batch_xyz, cfg.k_n).astype(np.int32)
+        sub_points = batch_xyz[:, :batch_xyz.shape[1] //
+                               cfg.sub_sampling_ratio[i], :]
+        pool_i = neighbour_idx[:, :batch_xyz.shape[1] //
+                               cfg.sub_sampling_ratio[i], :]
         up_i = DP.knn_search(sub_points, batch_xyz, 1).astype(np.int32)
         input_points.append(batch_xyz)
         input_neighbors.append(neighbour_idx)
@@ -210,13 +239,17 @@ def ms_map(batch_xyz, batch_features, batch_labels, batch_pc_idx, batch_cloud_id
         input_up_samples.append(up_i)
         batch_xyz = sub_points
 
-
     # b_f:[B, N, 3+d]
     # due to the constraints of the mapping function, only the list elements can be passed back sequentially
-    return batch_features, batch_labels, batch_pc_idx, batch_cloud_idx, input_points[0], input_points[1], input_points[2], input_points[3], input_points[4], input_neighbors[0], input_neighbors[1], input_neighbors[2], input_neighbors[3], input_neighbors[4], input_pools[0], input_pools[1], input_pools[2], input_pools[3], input_pools[4], input_up_samples[0], input_up_samples[1], input_up_samples[2], input_up_samples[3], input_up_samples[4]
+    return batch_features, batch_labels, batch_pc_idx, batch_cloud_idx,\
+           input_points[0], input_points[1], input_points[2], input_points[3], input_points[4],\
+           input_neighbors[0], input_neighbors[1], input_neighbors[2], input_neighbors[3], input_neighbors[4],\
+           input_pools[0], input_pools[1], input_pools[2], input_pools[3], input_pools[4], input_up_samples[0],\
+           input_up_samples[1], input_up_samples[2], input_up_samples[3], input_up_samples[4]
 
-def dataloader(dir, args, **kwargs):
-    dataset = S3DISDatasetGenerator(dir, val_area = args.val_area)
+
+def dataloader(ds_dir, args, **kwargs):
+    dataset = S3DISDatasetGenerator(ds_dir, val_area=args.val_area)
     val_sampler = ActiveLearningSampler(
         dataset,
         batch_size=args.batch_size,
@@ -227,4 +260,5 @@ def dataloader(dir, args, **kwargs):
         batch_size=args.batch_size,
         split='training'
     )
-    return ds.GeneratorDataset(train_sampler, ["xyz","colors","labels","q_idx","c_idx"], **kwargs), ds.GeneratorDataset(val_sampler, ["xyz","colors","labels","q_idx","c_idx"], **kwargs), dataset
+    return ds.GeneratorDataset(train_sampler, ["xyz", "colors", "labels", "q_idx", "c_idx"], **kwargs),\
+           ds.GeneratorDataset(val_sampler, ["xyz", "colors", "labels", "q_idx", "c_idx"], **kwargs), dataset

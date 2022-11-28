@@ -1,24 +1,45 @@
+# -*-coding:utf-8-*-
+# Copyright 2022 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+
+
+import os
+from os.path import join, exists, dirname
+import glob
+import pickle
 from sklearn.neighbors import KDTree
-from os.path import join, exists, dirname, abspath
 import numpy as np
 import pandas as pd
-import os, sys, glob, pickle
-from tools import DataProcessing as DP
-from helper_ply import write_ply
+from src.utils.tools import DataProcessing as DP
+from src.utils.helper_ply import write_ply
 
 
 dataset_path = '/home/user/dataset/S3DIS/Stanford3dDataset_v1.2_Aligned_Version'
-anno_paths = [line.rstrip() for line in open('../../thrid_party/meta/anno_paths.txt'))]
+anno_paths = [line.rstrip() for line in open('../../thrid_party/meta/anno_paths.txt')]
 anno_paths = [join(dataset_path, p) for p in anno_paths]
 
-gt_class = [x.rstrip() for x in open('../../thrid_party/meta/class_names.txt'))]
+gt_class = [x.rstrip() for x in open('../../thrid_party/meta/class_names.txt')]
 gt_class2label = {cls: i for i, cls in enumerate(gt_class)}
 
 sub_grid_size = 0.04
 original_pc_folder = join(dirname(dataset_path), 'original_ply')
 sub_pc_folder = join(dirname(dataset_path), 'input_{:.3f}'.format(sub_grid_size))
-os.mkdir(original_pc_folder) if not exists(original_pc_folder) else None
-os.mkdir(sub_pc_folder) if not exists(sub_pc_folder) else None
+if not exists(original_pc_folder):
+    os.mkdir(original_pc_folder)
+if not exists(sub_pc_folder):
+    os.mkdir(sub_pc_folder)
 out_format = '.ply'
 
 
@@ -46,13 +67,13 @@ def convert_pc2ply(anno_path, save_path):
 
     xyz = pc_label[:, :3].astype(np.float32)
     colors = pc_label[:, 3:6].astype(np.uint8)
-    labels = np.expand_dims(pc_label[:, 6].astype(np.uint8),axis=1)
+    labels = np.expand_dims(pc_label[:, 6].astype(np.uint8), axis=1)
     write_ply(save_path, (xyz, colors, labels), ['x', 'y', 'z', 'red', 'green', 'blue', 'class'])
 
     # save sub_cloud and KDTree file
     sub_xyz, sub_colors, sub_labels = DP.grid_sub_sampling(xyz, colors, labels, sub_grid_size)
     sub_colors = sub_colors / 255.0
-    sub_npy_file = join(sub_pc_folder, save_path.split('/')[-1][:-4] + out_format)
+    sub_ply_file = join(sub_pc_folder, save_path.split('/')[-1][:-4] + out_format)
     write_ply(sub_ply_file, [sub_xyz, sub_colors, sub_labels], ['x', 'y', 'z', 'red', 'green', 'blue', 'class'])
 
     search_tree = KDTree(sub_xyz)

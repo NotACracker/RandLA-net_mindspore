@@ -1,3 +1,4 @@
+# This file was copied from project [QingyongHu][RandLA-Net]
 # distutils: language = c++
 # distutils: sources = knn.cxx
 
@@ -7,8 +8,8 @@ import cython
 
 cdef extern from "knn_.h":
     void cpp_knn(const float* points, const size_t npts, const size_t dim, 
-			const float* queries, const size_t nqueries,
-			const size_t K, long* indices)
+            const float* queries, const size_t nqueries,
+            const size_t K, long* indices)
 
     void cpp_knn_omp(const float* points, const size_t npts, const size_t dim, 
                 const float* queries, const size_t nqueries,
@@ -27,8 +28,8 @@ cdef extern from "knn_.h":
                     const size_t K, long* batch_indices)
         
     void cpp_knn_batch_distance_pick_omp(const float* batch_data, const size_t batch_size, const size_t npts, const size_t dim, 
-				float* batch_queries, const size_t nqueries,
-				const size_t K, long* batch_indices)
+                float* batch_queries, const size_t nqueries,
+                const size_t K, long* batch_indices)
 
 def knn(pts, queries, K, omp=False):
 

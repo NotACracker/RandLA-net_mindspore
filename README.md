@@ -88,15 +88,15 @@ RandLA
 │   ├── model                                # network architecture
 │   │   ├── model.py                         # combine loss function with network
 │   └── utils
-│       ├── cpp_wrappers                     # dependency for point cloud subsampling
-│       ├── meta                             # meta information for data processor
-│       ├── nearest_neighbors                # dependency for point cloud nearest_neighbors
 │       ├── data_prepare_s3dis.py            # data processor for s3dis dataset
 │       ├── helper_ply.py                    # file utils
 │       ├── logger.py                        # logger
-│       ├── metrics.py                       # calculate iou and accuracy
 │       └── tools.py                         # DataProcessing and Config
-│
+├── third_party
+|   ├── cpp_wrappers                         # dependency for point cloud subsampling
+|   ├── nearest_neighbors                    # dependency for point cloud nearest_neighbors
+|   └── data_prepare_s3dis.py                # data processor for s3dis dataset
+|
 ├── 6_fold_cv.py
 ├── README.md
 ├── eval.py
@@ -119,7 +119,7 @@ python train_ascend.py \
   --name randla_Area-5-gpu
 ```
 
-The following table describes the arguments. Some default Arguments are difined in `src/utils/tools.py`. You can change freely as you want.
+The following table describes the arguments. Some default Arguments are defined in `src/utils/tools.py`. You can change freely as you want.
 
 | Config Arguments  |                         Explanation                          |
 | :---------------: | :----------------------------------------------------------: |
@@ -229,7 +229,7 @@ Area_5_storage_4 Acc:0.8087958823812531
 | Uploaded Date       | 11/26/2022 (month/day/year) | 11/26/2022 (month/day/year)|
 | MindSpore Version   | 1.7.0                       | 1.7.0                      |
 | Dataset             | S3DIS                       | S3DIS                      |
-| batch_size          | 6                           | 6                          |
+| batch_size          | 32                          | 32                          |
 | outputs             | feature vector + probability| feature vector + probability  |
 | Accuracy            | See following tables        | See following tables       |
 
@@ -243,8 +243,7 @@ Area_5_storage_4 Acc:0.8087958823812531
 
 | Metric | Value(Tensorflow)|  Value(Mindspore, Ascend) |    Value(Mindspore, GPU)      |
 | :----: | :------------:   |  :-------------------: |       :-------------------:      |
-| mIoU |     70.0%          |         62.5%         |               68.8%               |
-
+| mIoU |     70.0%          |         69.1%         |               68.8%               |
 
 ## Reference
 

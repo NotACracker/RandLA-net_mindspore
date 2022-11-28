@@ -1,4 +1,4 @@
-
+/* This file was copied from project [HuguesTHOMAS][KPConv] */
 
 #include "../../cpp_utils/cloud/cloud.h"
 
@@ -11,72 +11,72 @@ class SampledData
 {
 public:
 
-	// Elements
-	// ********
+    // Elements
+    // ********
 
-	int count;
-	PointXYZ point;
-	vector<float> features;
-	vector<unordered_map<int, int>> labels;
+    int count;
+    PointXYZ point;
+    vector<float> features;
+    vector<unordered_map<int, int>> labels;
 
 
-	// Methods
-	// *******
+    // Methods
+    // *******
 
-	// Constructor
-	SampledData() 
-	{ 
-		count = 0; 
-		point = PointXYZ();
-	}
+    // Constructor
+    SampledData()
+    {
+        count = 0;
+        point = PointXYZ();
+    }
 
-	SampledData(const size_t fdim, const size_t ldim)
-	{
-		count = 0;
-		point = PointXYZ();
-	    features = vector<float>(fdim);
-	    labels = vector<unordered_map<int, int>>(ldim);
-	}
+    SampledData(const size_t fdim, const size_t ldim)
+    {
+        count = 0;
+        point = PointXYZ();
+        features = vector<float>(fdim);
+        labels = vector<unordered_map<int, int>>(ldim);
+    }
 
-	// Method Update
-	void update_all(const PointXYZ p, vector<float>::iterator f_begin, vector<int>::iterator l_begin)
-	{
-		count += 1;
-		point += p;
-		transform (features.begin(), features.end(), f_begin, features.begin(), plus<float>());
-		int i = 0;
-		for(vector<int>::iterator it = l_begin; it != l_begin + labels.size(); ++it)
-		{
-		    labels[i][*it] += 1;
-		    i++;
-		}
-		return;
-	}
-	void update_features(const PointXYZ p, vector<float>::iterator f_begin)
-	{
-		count += 1;
-		point += p;
-		transform (features.begin(), features.end(), f_begin, features.begin(), plus<float>());
-		return;
-	}
-	void update_classes(const PointXYZ p, vector<int>::iterator l_begin)
-	{
-		count += 1;
-		point += p;
-		int i = 0;
-		for(vector<int>::iterator it = l_begin; it != l_begin + labels.size(); ++it)
-		{
-		    labels[i][*it] += 1;
-		    i++;
-		}
-		return;
-	}
-	void update_points(const PointXYZ p)
-	{
-		count += 1;
-		point += p;
-		return;
-	}
+    // Method Update
+    void update_all(const PointXYZ p, vector<float>::iterator f_begin, vector<int>::iterator l_begin)
+    {
+        count += 1;
+        point += p;
+        transform (features.begin(), features.end(), f_begin, features.begin(), plus<float>());
+        int i = 0;
+        for(vector<int>::iterator it = l_begin; it != l_begin + labels.size(); ++it)
+        {
+            labels[i][*it] += 1;
+            i++;
+        }
+        return;
+    }
+    void update_features(const PointXYZ p, vector<float>::iterator f_begin)
+    {
+        count += 1;
+        point += p;
+        transform (features.begin(), features.end(), f_begin, features.begin(), plus<float>());
+        return;
+    }
+    void update_classes(const PointXYZ p, vector<int>::iterator l_begin)
+    {
+        count += 1;
+        point += p;
+        int i = 0;
+        for(vector<int>::iterator it = l_begin; it != l_begin + labels.size(); ++it)
+        {
+            labels[i][*it] += 1;
+            i++;
+        }
+        return;
+    }
+    void update_points(const PointXYZ p)
+    {
+        count += 1;
+        point += p;
+        return;
+    }
 };
 
 
