@@ -19,8 +19,6 @@ import os
 import argparse
 import pickle
 import shutil
-from pathlib import Path
-
 
 import mindspore as ms
 from mindspore import Model, Tensor, context, nn, ops
@@ -28,7 +26,6 @@ from mindspore.nn import Adam
 from mindspore.train.callback import TimeMonitor, LossMonitor, ModelCheckpoint, CheckpointConfig
 from mindspore.train.callback import SummaryCollector
 from mindspore.train.loss_scale_manager import DynamicLossScaleManager
-
 
 from src.data.dataset import dataloader, ms_map
 from src.utils.tools import ConfigS3DIS as cfg

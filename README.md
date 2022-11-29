@@ -1,15 +1,43 @@
 # RandLA-Net: Efficient Semantic Segmentation of Large-Scale Point Clouds
 
+# Contents
+
+- [RandLA-Net](#randlanet)
+    - [Model Architecture](#model-architecture)
+    - [Requirements](#requirements)
+        - [Install dependencies](#install-dependencies)
+    - [Dataset](#dataset)
+        - [Preparation](#preparation)
+        - [Directory structure of dataset](#directory-structure-of-dataset)
+    - [Quick Start](#quick-start)
+    - [Script Description](#script-description)
+        - [Scripts and Sample Code](#scripts-and-sample-code)
+        - [Script Parameter](#script-parameter)
+    - [Training](#training)
+        - [Training Process](#training-process)
+        - [Training Result](#training-result)
+    - [Evaluation](#evaluation)
+        - [Evaluation Process](#evaluation-process)
+        - [Evaluation Result](#evaluation-result)
+    - [Performance](#performance)
+        - [Training Performance](#training-performance)
+        - [Inference Performance](#inference-performance)
+        - [S3DIS Area 5](#s3dis-area-5)
+        - [S3DIS 6 fold cross validation](#s3dis-6-fold-cross-validation)
+    - [Reference](#reference)
+
+# [RandLA-Net](#contents)
+
 Mindspore implementation for ***"RandLA-Net: Efficient Semantic Segmentation of Large-Scale Point Clouds"***
 
 Please read the [original paper](https://arxiv.org/abs/1911.11236)
 or [original tensorflow implementation](https://github.com/QingyongHu/RandLA-Net) for more detailed information.
 
-## Model Architecture
+## [Model Architecture](#contents)
 
 ![RandLA-Net Framework](./figs/framework.png)
 
-## Requirements
+## [Requirements](#contents)
 
 - Hardware
     - For Ascend: Ascend 910.
@@ -24,14 +52,14 @@ or [original tensorflow implementation](https://github.com/QingyongHu/RandLA-Net
     - scikit-learn==0.21.3
     - numpy==1.21.5
 
-### Install dependencies
+### [Install dependencies](#contents)
 
 1. `pip install -r requirements.txt`
 2. `cd third_party` & `bash compile_op.sh`
 
-## Dataset
+## [Dataset](#contents)
 
-### Preparation
+### [Preparation](#contents)
 
 1. Download S3DIS dataset from
    this [link](https://docs.google.com/forms/d/e/1FAIpQLScDimvNMCGhy_rmBA2gHfDu3naktRm6A8BPwAWWDv-Uhm6Shw/viewform?c=0&w=1)
@@ -40,7 +68,7 @@ or [original tensorflow implementation](https://github.com/QingyongHu/RandLA-Net
 3. run `data_prepare_s3dis.py` (in `src/utils/data_prepare_s3dis.py`) to process data. The processed data will be stored
    in `input_0.040` and `original_ply` folders.
 
-### Directory structure of dataset
+### [Directory structure of dataset](#contents)
 
 ```html
 dataset
@@ -55,17 +83,19 @@ dataset
    └── Stanford3dDataset_v1.2_Aligned_Version
 ```
 
-## Quick Start
+## [Quick Start](#contents)
 
 For GPU:
 
 S3DIS Area 5
+
 ```shell
 bash scripts/train_s3dis_6fold_gpu.sh
 bash scripts/eval_s3dis_6fold_gpu.sh
 ```
 
 S3DIS 6 fold cross validation
+
 ```shell
 bash scripts/train_s3dis_6fold_gpu.sh
 bash scripts/eval_s3dis_6fold_gpu.sh
@@ -74,20 +104,22 @@ bash scripts/eval_s3dis_6fold_gpu.sh
 For Ascend:
 
 S3DIS Area 5
+
 ```shell
 bash scripts/train_s3dis_area5_ascend.sh
 bash scripts/eval_s3dis_area5_ascend.sh
 ```
 
 S3DIS 6 fold cross validation
+
 ```shell
 bash scripts/train_s3dis_6fold_ascend.sh
 bash scripts/eval_s3dis_6fold_ascend.sh
 ```
 
-## Script Description
+## [Script Description](#contents)
 
-### Scripts and Sample Code
+### [Scripts and Sample Code](#contents)
 
 ```html
 RandLA
@@ -123,7 +155,7 @@ RandLA
 └── train.py
 ```
 
-### Script Parameter
+### [Script Parameter](#contents)
 
 we use `train_s3dis_area5_gpu.sh` as an example
 
@@ -152,9 +184,9 @@ The following table describes the arguments. Some default Arguments are defined 
 | `--scale`            | use auto loss scale or not  |
 | `--name`             | experiment name, which will combine with outputs_dir. The output files for current experiments will be stores in `outputs_dir/name`  |
 
-## Training
+## [Training](#contents)
 
-### Training Process
+### [Training Process](#contents)
 
 For GPU on S3DIS area 5:
 
@@ -180,7 +212,7 @@ For Ascend on S3DIS 6 fold:
 bash train_s3dis_6fold_ascend.sh
 ```
 
-### Training Result
+### [Training Result](#contents)
 
 Using `bash scripts/train_s3dis_area5_ascend.sh` as an example:
 
@@ -197,9 +229,9 @@ runs
          └── ....
 ```
 
-## Evaluation
+## [Evaluation]
 
-### Evaluation Process
+### [Evaluation Process](#contents)
 
 For GPU on S3DIS area 5:
 
@@ -228,7 +260,7 @@ bash eval_s3dis_6fold_gpu.sh
 Note: Before you start eval, please guarantee `--model_path` is equal to
 `{args.outputs_dir}/{args.name}` when training.
 
-### Evaluation Result
+### [Evaluation Result](#contents)
 
 Ascend S3DIS Area 5 result
 
@@ -248,9 +280,9 @@ Area_5_storage_4 Acc:0.8087958823812531
 --------------------------------------------------------------------------------------
 ```
 
-## Performance
+## [Performance](#contents)
 
-### Training Performance
+### [Training Performance](#contents)
 
 | Parameters                 | Ascend 910                                                   | GPU (3090) |
 | -------------------------- | ------------------------------------------------------------ | ----------------------------------------------|
@@ -267,7 +299,7 @@ Area_5_storage_4 Acc:0.8087958823812531
 | Total time                 | About 16 h 24 mins                                           | About 7 h 30 mins                             |
 | Checkpoint                 | 58 MB (.ckpt file)                                           | 58 MB (.ckpt file)                            |
 
-### Inference Performance
+### [Inference Performance](#contents)
 
 | Parameters          | Ascend                      |   GPU                      |
 | ------------------- | --------------------------- |--------------------------- |
@@ -280,19 +312,19 @@ Area_5_storage_4 Acc:0.8087958823812531
 | outputs             | feature vector + probability| feature vector + probability  |
 | Accuracy            | See following tables        | See following tables       |
 
-### S3DIS Area 5
+### [S3DIS Area 5](#contents)
 
 | Metric | Value(Tensorflow)|  Value(Mindspore, Ascend) |    Value(Mindspore, GPU)      |
 | :----: | :------------:   |  :-------------------: |       :-------------------:      |
 | mIoU |     62.5%          |         62.5%         |               62.7%               |
 
-### S3DIS 6 fold cross validation
+### [S3DIS 6 fold cross validation](#contents)
 
 | Metric | Value(Tensorflow)|  Value(Mindspore, Ascend) |    Value(Mindspore, GPU)      |
 | :----: | :------------:   |  :-------------------: |       :-------------------:      |
 | mIoU |     70.0%          |         69.1%         |               68.8%               |
 
-## Reference
+## [Reference](#contents)
 
 Please kindly cite the original paper references in your publications if it helps your research:
 
