@@ -276,7 +276,6 @@ class RandLANet(nn.Cell):
         feature = self.bn_start(feature)  # shape (B, 8, N, 1)
 
         # <<<<<<<<<< ENCODER
-
         f_stack = []
         for i in range(5):
             # at iteration i, feature.shape = (B, d_layer, N_layer, 1)
@@ -286,13 +285,11 @@ class RandLANet(nn.Cell):
             if i == 0:
                 f_stack.append(f_encoder_i)
             f_stack.append(f_sampled_i)
-
         # # >>>>>>>>>> ENCODER
 
         feature = self.mlp(f_stack[-1])  # [B, d, N, 1]
 
         # <<<<<<<<<< DECODER
-
         f_decoder_list = []
         for j in range(5):
             f_interp_i = self.random_sample(
@@ -301,8 +298,7 @@ class RandLANet(nn.Cell):
             f_decoder_i = self.decoder[j](cat((f_stack[-j-2], f_interp_i)))
             feature = f_decoder_i
             f_decoder_list.append(f_decoder_i)
-
-        # >>>>>>>>>> DECODER
+        # # >>>>>>>>>> DECODER
 
         scores = self.fc_end(f_decoder_list[-1])  # [B, num_classes, N, 1]
 

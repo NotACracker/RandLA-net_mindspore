@@ -59,16 +59,30 @@ dataset
 
 For GPU:
 
+S3DIS Area 5
 ```shell
-bash scripts/train_eval_s3dis_area5_gpu.sh
-bash scripts/train_eval_s3dis_6fold_gpu.sh
+bash scripts/train_s3dis_6fold_gpu.sh
+bash scripts/eval_s3dis_6fold_gpu.sh
+```
+
+S3DIS 6 fold cross validation
+```shell
+bash scripts/train_s3dis_6fold_gpu.sh
+bash scripts/eval_s3dis_6fold_gpu.sh
 ```
 
 For Ascend:
 
+S3DIS Area 5
 ```shell
-bash scripts/train_eval_s3dis_area5_ascend.sh
-bash scripts/train_eval_s3dis_6fold_ascend.sh
+bash scripts/train_s3dis_area5_ascend.sh
+bash scripts/eval_s3dis_area5_ascend.sh
+```
+
+S3DIS 6 fold cross validation
+```shell
+bash scripts/train_s3dis_6fold_ascend.sh
+bash scripts/eval_s3dis_6fold_ascend.sh
 ```
 
 ## Script Description
@@ -78,10 +92,14 @@ bash scripts/train_eval_s3dis_6fold_ascend.sh
 ```html
 RandLA
 ├── scripts
-│   ├── train_eval_s3dis_area5_ascend.sh     # Train and Evaluate: S3DIS Area 5 on Ascend
-│   ├── train_eval_s3dis_area5_gpu.sh        # Train and Evaluate: S3DIS dataset on GPU
-│   ├── train_eval_s3dis_6fold_ascend.sh     # Train and Evaluate: S3DIS 6 fold cross validation on Ascend
-│   └── train_eval_s3dis_6fold_gpu.sh        # Train and Evaluate: S3DIS 6 fold cross validation on GPU
+│   ├── eval_s3dis_6fold_ascend.sh           # Evaluate: S3DIS 6 fold cross validation on Ascend
+│   ├── eval_s3dis_6fold_gpu.sh              # Evaluate: S3DIS 6 fold cross validation on GPU
+│   ├── eval_s3dis_area5_ascend.sh           # Evaluate: S3DIS Area 5 on Ascend
+│   ├── eval_s3dis_area5_gpu.sh              # Evaluate: S3DIS Area 5 on GPU
+│   ├── train_s3dis_6fold_ascend.sh          # Train: S3DIS 6 fold on Ascend
+│   ├── train_s3dis_6fold_gpu.sh             # Train: S3DIS 6 fold on GPU
+│   ├── train_s3dis_area5_ascend.sh          # Train: S3DIS Area 5 on Ascend
+│   └── train_s3dis_area5_gpu.sh             # Train: S3DIS Area 5 on GPU
 ├── src
 |   ├── data                                 # class and functions for Mindspore dataset
 │   │   ├── dataset.py                       # dataset class for train
@@ -94,28 +112,30 @@ RandLA
 │       └── tools.py                         # DataProcessing and Config
 ├── third_party
 |   ├── cpp_wrappers                         # dependency for point cloud subsampling
+|   ├── meta                                 # meta information for data processor
 |   ├── nearest_neighbors                    # dependency for point cloud nearest_neighbors
-|   └── data_prepare_s3dis.py                # data processor for s3dis dataset
+|   └── compile_op.sh                        # shell for installing dependencies, including cpp_wrappers and nearest_neighbors
 |
 ├── 6_fold_cv.py
 ├── README.md
 ├── eval.py
 ├── requirements.txt
-├── train.py
+└── train.py
 ```
 
 ### Script Parameter
 
-we use `train_eval_s3dis_area5_gpu.sh` as an example
+we use `train_s3dis_area5_gpu.sh` as an example
 
 ```shell
-python train_ascend.py \
+python train.py \
   --epochs 100 \
   --batch_size 6 \
   --val_area Area_5 \
   --device_target GPU \
   --device_id 0 \
   --outputs_dir ./runs \
+  --scale \
   --name randla_Area-5-gpu
 ```
 
@@ -129,6 +149,7 @@ The following table describes the arguments. Some default Arguments are defined 
 | `--device_target`    | chose "Ascend" or "GPU" |
 | `--device_id`        | which Ascend AI core/GPU to run(default:0) |
 | `--outputs_dir`      | where stores log and network weights  |
+| `--scale`            | use auto loss scale or not  |
 | `--name`             | experiment name, which will combine with outputs_dir. The output files for current experiments will be stores in `outputs_dir/name`  |
 
 ## Training
@@ -138,24 +159,36 @@ The following table describes the arguments. Some default Arguments are defined 
 For GPU on S3DIS area 5:
 
 ```shell
-python train.py --device_target GPU --device_id 0 --batch_size 6 --val_area Area_5 --scale --name randla_Area-5-gpu --outputs_dir ./runs
+bash train_s3dis_area5_gpu.sh
 ```
 
 For Ascend on S3DIS area 5:
 
 ```shell
-python train.py --device_target Ascend --device_id 0 --batch_size 6 --val_area Area_5 --scale --name randla_Area-5-ascend --outputs_dir ./runs
+bash train_s3dis_area5_ascend.sh
+```
+
+For GPU on S3DIS 6 fold:
+
+```shell
+bash train_s3dis_6fold_gpu.sh
+```
+
+For Ascend on S3DIS 6 fold:
+
+```shell
+bash train_s3dis_6fold_ascend.sh
 ```
 
 ### Training Result
 
-Using `bash scripts/train_eval_s3dis_area5_ascend.sh` as an example:
+Using `bash scripts/train_s3dis_area5_ascend.sh` as an example:
 
 Training results will be stored in `/runs/randla_Area-5-ascend` , which is determined
 by `{args.outputs_dir}/{args.name}/ckpt`. For example:
 
 ```html
-outputs
+runs
 ├── randla_Area-5-ascend
     ├── 2022-10-24_time_11_23_40_rank_0.log
     └── ckpt
@@ -166,24 +199,38 @@ outputs
 
 ## Evaluation
 
-### Evaluation Process 910
+### Evaluation Process
 
 For GPU on S3DIS area 5:
 
 ```shell
-python -B eval.py --model_path runs/randla_Area-5-gpu --val_area Area_5 --device_id 0 --device_target GPU --batch_size 32
+bash eval_s3dis_area5_gpu.sh
 ```
 
 For Ascend on S3DIS area 5:
 
 ```shell
-python -B eval.py --model_path runs/randla_Area-5-ascend --val_area Area_5 --device_id 0 --device_target Ascend --batch_size 32
+bash eval_s3dis_area5_gpu.sh
+```
+
+For GPU on S3DIS 6 fold cross validation:
+
+```shell
+bash eval_s3dis_6fold_gpu.sh
+```
+
+For Ascend on S3DIS 6 fold cross validation:
+
+```shell
+bash eval_s3dis_6fold_gpu.sh
 ```
 
 Note: Before you start eval, please guarantee `--model_path` is equal to
 `{args.outputs_dir}/{args.name}` when training.
 
-### Evaluation Result 910
+### Evaluation Result
+
+Ascend S3DIS Area 5 result
 
 ```shell
 Area_5_office_5 Acc:0.9362713695425551
@@ -216,7 +263,7 @@ Area_5_storage_4 Acc:0.8087958823812531
 | Optimizer                  | Adam                                                         | Adam                                          |
 | Loss Function              | Softmax Cross Entropy                                        | Softmax Cross Entropy                         |
 | outputs                    | feature vector + probability                                 | feature vector + probability                  |
-| Speed                      | 1190 ms/step                                                 | 478 ms/step                                   |
+| Speed                      | 1181 ms/step                                                 | 478 ms/step                                   |
 | Total time                 | About 16 h 24 mins                                           | About 7 h 30 mins                             |
 | Checkpoint                 | 58 MB (.ckpt file)                                           | 58 MB (.ckpt file)                            |
 

@@ -14,5 +14,13 @@
 # limitations under the License.
 # ============================================================================
 
-python -B train.py --device_target GPU --device_id 0 --batch_size 6 --val_area Area_5 --scale --name randla_Area-5-gpu --outputs_dir ./runs
-python -B eval.py --model_path runs/randla_Area-5-gpu --val_area Area_5 --device_id 0 --device_target GPU --batch_size 32
+for i in {1..6}
+do
+    python -B eval.py --model_path runs/randla_Area-$i-ascend --val_area Area_$i --device_id 0 --device_target Ascend --batch_size 32
+done
+mkdir ./6_fold_result
+for i in {1..6}
+do
+    cp -r ./runs/randla_Area-$i-ascend/test_result/val_preds/*.ply ./6_fold_result
+done
+python -B 6_fold_cv.py

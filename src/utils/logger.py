@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+# This file was copied from project [OpenHarmony][third_party_mindspore]
 
 """Custom Logger."""
 import logging

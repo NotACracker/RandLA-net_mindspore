@@ -151,38 +151,27 @@ if __name__ == "__main__":
 
     expr.add_argument('--epochs', type=int, help='max epochs',
                       default=100)
-
     expr.add_argument('--batch_size', type=int, help='batch size',
                       default=6)
-
     expr.add_argument('--val_area', type=str, help='area to validate',
                       default='Area_5')
-
     expr.add_argument('--scale', action='store_true', help='scale or not',
                       default=False)
-
     dirs.add_argument('--outputs_dir', type=str, help='model to save',
                       default='./runs')
-
     misc.add_argument('--device_target', type=str, help='Ascend or GPU',
                       default='GPU')
-
     misc.add_argument('--device_id', type=int, help='Ascend/GPU id to use',
                       default=0)
-
     misc.add_argument('--rank', type=int, help='rank',
                       default=0)
-
     misc.add_argument('--name', type=str, help='name of the experiment',
                       default=None)
 
     arguments = parser.parse_args()
 
     if arguments.name is None:
-        if arguments.resume:
-            arguments.name = Path(arguments.resume).split('/')[-1]
-        else:
-            arguments.name = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
+        arguments.name = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
 
     if not os.path.exists(arguments.outputs_dir):
         os.makedirs(arguments.outputs_dir)

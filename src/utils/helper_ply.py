@@ -272,8 +272,7 @@ def write_ply(filename, field_list, field_names, triangular_faces=None):
     """
 
     # Format list input to the right form
-    field_list = list(field_list) if (isinstance(field_list) == list or isinstance(
-        field_list) == tuple) else list((field_list,))
+    field_list = list(field_list) if (isinstance(field_list, (list, tuple))) else list((field_list,))
     for i, field in enumerate(field_list):
         if field.ndim < 2:
             field_list[i] = field.reshape(-1, 1)

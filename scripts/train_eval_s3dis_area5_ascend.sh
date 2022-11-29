@@ -15,4 +15,4 @@
 # ============================================================================
 
 python -B train.py --device_target Ascend --device_id 0 --batch_size 6 --val_area Area_5 --scale --name randla_Area-5-Ascend --outputs_dir ./runs
-python -B eval.py --model_path runs/randla_Area-5-Ascend --val_area Area_5 --device_id 0 --device_target Ascend --batch_size 20
+python -B eval.py --model_path runs/randla_Area-5-Ascend --val_area Area_5 --device_id 0 --device_target Ascend --batch_size 32
