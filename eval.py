@@ -71,6 +71,10 @@ def run_eval(arg):
     d_in = 6
     bias = arg.device_target == 'GPU'
     network = RandLANet(d_in, cfg.num_classes, bias=bias)
+    network.set_train(False)
+    if not bias:
+        network.to_float(ms.float16)
+
     ckpt_path = Path(os.path.join(arg.model_path, 'ckpt'))
     ckpts = ckpt_path.glob('*.ckpt')
     ckpts = sorted(ckpts, key=lambda ckpt: ckpt.stem)
